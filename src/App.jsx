@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { comerciosMock } from "./data/mockData";
 import ComercioCard from "./components/ComercioCard";
 import Filtros from "./components/Filtros";
+import DashboardStats from "./components/DashboardStats";
 
 export default function App() {
   const [busqueda, setBusqueda] = useState("");
@@ -39,7 +40,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6 md:p-10">
-      <header className="max-w-7xl mx-auto mb-10 text-center md:text-left">
+      <header className="max-w-7xl mx-auto mb-8 text-center md:text-left">
         <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200">
           Pereira Reactiva 🚀
         </h1>
@@ -49,7 +50,10 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl mx-auto">
-        {/* Componente de Filtros */}
+        {/* Dashboard de Indicadores */}
+        <DashboardStats comercios={comerciosMock} />
+
+        {/* Panel de Filtros */}
         <Filtros
           busqueda={busqueda}
           setBusqueda={setBusqueda}
