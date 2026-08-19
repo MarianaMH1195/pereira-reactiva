@@ -6,6 +6,7 @@ import DashboardStats from "./components/DashboardStats";
 import NuevoComercioModal from "./components/NuevoComercioModal";
 import MapaComercios from "./components/MapaComercios";
 import { supabase } from "./lib/supabaseClient";
+import { calcularDistanciaKm } from "./lib/distancia";
 
 // 🎨 Estilos separados
 import "./styles/App.css";
@@ -17,6 +18,11 @@ export default function App() {
   const [busqueda, setBusqueda] = useState("");
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("Todas");
   const [comunaSeleccionada, setComunaSeleccionada] = useState("Todas");
+
+  // 📍 Estados de Geolocalización
+  const [ubicacionUsuario, setUbicacionUsuario] = useState(null);
+  const [cargandoUbicacion, setCargandoUbicacion] = useState(false);
+  const [ordenarPorCercania, setOrdenarPorCercania] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -47,6 +53,31 @@ export default function App() {
     }
   };
 
+  // 📍 Función para solicitar GPS del usuario
+  const obtenerUbicacionUsuario = () => {
+    if (!navigator.geolocation) {
+      alert("Tu navegador no soporta geolocalización.");
+      return;
+    }
+
+    setCargandoUbicacion(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUbicacionUsuario({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setCargandoUbicacion(false);
+        setOrdenarPorCercania(true);
+      },
+      (error) => {
+        console.error("Error al obtener ubicación:", error);
+        alert("No pudimos obtener tu ubicación. Por favor activa el GPS.");
+        setCargandoUbicacion(false);
+      }
+    );
+  };
+
   const categorias = useMemo(
     () => [...new Set(comercios.map((item) => item.categoria))],
     [comercios]
@@ -56,7 +87,7 @@ export default function App() {
     [comercios]
   );
 
-const handleAgregarComercio = async (nuevoComercio) => {
+  const handleAgregarComercio = async (nuevoComercio) => {
     try {
       const { data, error } = await supabase
         .from("comercios")
@@ -89,8 +120,9 @@ const handleAgregarComercio = async (nuevoComercio) => {
     }
   };
 
+  // 🔍 Filtrado y ordenamiento por cercanía
   const comerciosFiltrados = useMemo(() => {
-    return comercios.filter((comercio) => {
+    let resultado = comercios.filter((comercio) => {
       const coincideBusqueda =
         comercio.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
         comercio.necesidad?.toLowerCase().includes(busqueda.toLowerCase());
@@ -105,7 +137,40 @@ const handleAgregarComercio = async (nuevoComercio) => {
 
       return coincideBusqueda && coincideCategoria && coincideComuna;
     });
-  }, [comercios, busqueda, categoriaSeleccionada, comunaSeleccionada]);
+
+    if (ordenarPorCercania && ubicacionUsuario) {
+      resultado = [...resultado].sort((a, b) => {
+        const distA =
+          parseFloat(
+            calcularDistanciaKm(
+              ubicacionUsuario.lat,
+              ubicacionUsuario.lng,
+              a.lat,
+              a.lng
+            )
+          ) || 9999;
+        const distB =
+          parseFloat(
+            calcularDistanciaKm(
+              ubicacionUsuario.lat,
+              ubicacionUsuario.lng,
+              b.lat,
+              b.lng
+            )
+          ) || 9999;
+        return distA - distB;
+      });
+    }
+
+    return resultado;
+  }, [
+    comercios,
+    busqueda,
+    categoriaSeleccionada,
+    comunaSeleccionada,
+    ordenarPorCercania,
+    ubicacionUsuario,
+  ]);
 
   return (
     <div className="app-container">
@@ -137,6 +202,11 @@ const handleAgregarComercio = async (nuevoComercio) => {
           setComunaSeleccionada={setComunaSeleccionada}
           categorias={categorias}
           comunas={comunas}
+          ubicacionUsuario={ubicacionUsuario}
+          obtenerUbicacionUsuario={obtenerUbicacionUsuario}
+          cargandoUbicacion={cargandoUbicacion}
+          ordenarPorCercania={ordenarPorCercania}
+          setOrdenarPorCercania={setOrdenarPorCercania}
         />
 
         {/* 🗺️ Mapa Interactivo */}
@@ -157,7 +227,11 @@ const handleAgregarComercio = async (nuevoComercio) => {
         ) : comerciosFiltrados.length > 0 ? (
           <div className="grid-comercios">
             {comerciosFiltrados.map((comercio) => (
-              <ComercioCard key={comercio.id} comercio={comercio} />
+              <ComercioCard
+                key={comercio.id}
+                comercio={comercio}
+                ubicacionUsuario={ubicacionUsuario}
+              />
             ))}
           </div>
         ) : (
@@ -177,7 +251,7 @@ const handleAgregarComercio = async (nuevoComercio) => {
           categorias.length > 0
             ? categorias
             : ["Gastronomía", "Comercio", "Servicios"]
-        }git
+        }
         comunas={
           comunas.length > 0 ? comunas : ["Centro", "Circunvalar", "Cuba"]
         }

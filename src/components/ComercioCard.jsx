@@ -1,4 +1,6 @@
-export default function ComercioCard({ comercio }) {
+import { calcularDistanciaKm } from "../lib/distancia";
+
+export default function ComercioCard({ comercio, ubicacionUsuario }) {
   // 1. Limpiar el número de contacto dejando solo los números
   const numeroLimpio = comercio.contacto
     ? comercio.contacto.replace(/\D/g, "")
@@ -15,6 +17,16 @@ export default function ComercioCard({ comercio }) {
   );
 
   const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${mensaje}`;
+
+  // 4. Calcular distancia si tenemos la ubicación del usuario y del comercio
+  const distancia = ubicacionUsuario
+    ? calcularDistanciaKm(
+        ubicacionUsuario.lat,
+        ubicacionUsuario.lng,
+        comercio.lat,
+        comercio.lng
+      )
+    : null;
 
   // Clases según el estado de reactivación
   const estadoStyles = {
@@ -43,6 +55,13 @@ export default function ComercioCard({ comercio }) {
         >
           {comercio.estado}
         </span>
+
+        {/* Badge de distancia (solo se muestra si el usuario activó su ubicación) */}
+        {distancia && (
+          <span className="absolute bottom-3 left-3 bg-black/75 backdrop-blur-md text-emerald-300 text-xs font-semibold px-2.5 py-1 rounded-lg border border-emerald-500/30 shadow-lg">
+            📍 {distancia} km de ti
+          </span>
+        )}
       </div>
 
       {/* Contenido de la tarjeta */}
