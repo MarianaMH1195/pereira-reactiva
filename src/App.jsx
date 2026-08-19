@@ -56,7 +56,7 @@ export default function App() {
     [comercios]
   );
 
-  const handleAgregarComercio = async (nuevoComercio) => {
+const handleAgregarComercio = async (nuevoComercio) => {
     try {
       const { data, error } = await supabase
         .from("comercios")
@@ -72,6 +72,8 @@ export default function App() {
             necesidad: nuevoComercio.necesidad,
             descuento_reactivacion: nuevoComercio.descuentoReactivacion,
             imagen: nuevoComercio.imagen,
+            lat: nuevoComercio.lat,
+            lng: nuevoComercio.lng,
           },
         ])
         .select();
@@ -175,7 +177,7 @@ export default function App() {
           categorias.length > 0
             ? categorias
             : ["Gastronomía", "Comercio", "Servicios"]
-        }
+        }git
         comunas={
           comunas.length > 0 ? comunas : ["Centro", "Circunvalar", "Cuba"]
         }

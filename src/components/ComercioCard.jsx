@@ -1,78 +1,99 @@
-import PropTypes from 'prop-types';
-
 export default function ComercioCard({ comercio }) {
-  const estadoColor = {
-    Operativo: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-    "En Riesgo": "bg-rose-500/20 text-rose-400 border-rose-500/30",
-    "En Recuperación": "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  // 1. Limpiar el número de contacto dejando solo los números
+  const numeroLimpio = comercio.contacto
+    ? comercio.contacto.replace(/\D/g, "")
+    : "";
+
+  // 2. Formatear con el indicativo de Colombia (+57) si no lo incluye
+  const numeroWhatsApp = numeroLimpio.startsWith("57")
+    ? numeroLimpio
+    : `57${numeroLimpio}`;
+
+  // 3. Crear mensaje predeterminado codificado para la URL
+  const mensaje = encodeURIComponent(
+    `Hola, vi tu comercio "${comercio.nombre}" en Pereira Reactiva y me gustaría obtener más información.`
+  );
+
+  const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${mensaje}`;
+
+  // Clases según el estado de reactivación
+  const estadoStyles = {
+    Operativo: "bg-emerald-950/80 text-emerald-400 border-emerald-800/60",
+    "En Recuperación": "bg-amber-950/80 text-amber-400 border-amber-800/60",
+    "En Riesgo": "bg-rose-950/80 text-rose-400 border-rose-800/60",
   };
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden hover:border-emerald-500/50 transition-all duration-300 shadow-xl flex flex-col">
-      <div className="relative h-48 w-full overflow-hidden">
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl hover:border-slate-700 transition-all flex flex-col justify-between">
+      {/* Imagen del comercio */}
+      <div className="relative h-48 w-full overflow-hidden bg-slate-950">
         <img
-          src={comercio.imagen}
+          src={
+            comercio.imagen ||
+            "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&q=80"
+          }
           alt={comercio.nombre}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
         />
         <span
-          className={`absolute top-3 right-3 px-3 py-1 text-xs font-semibold rounded-full border backdrop-blur-md ${
-            estadoColor[comercio.estado] || "bg-slate-700 text-slate-300"
+          className={`absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full border shadow-md ${
+            estadoStyles[comercio.estado] ||
+            "bg-slate-800 text-slate-300 border-slate-700"
           }`}
         >
           {comercio.estado}
         </span>
       </div>
 
+      {/* Contenido de la tarjeta */}
       <div className="p-5 flex-1 flex flex-col justify-between">
         <div>
-          <span className="text-xs font-medium text-emerald-400 uppercase tracking-wider">
-            {comercio.categoria} • {comercio.comuna}
-          </span>
-          <h3 className="text-xl font-bold text-white mt-1 mb-2">
+          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-1">
+            <span>{comercio.categoria}</span>
+            <span>•</span>
+            <span className="text-slate-400">{comercio.comuna}</span>
+          </div>
+
+          <h3 className="text-lg font-bold text-white mb-2 line-clamp-1">
             {comercio.nombre}
           </h3>
-          <p className="text-slate-400 text-sm mb-3">
-            📍 {comercio.direccion}
+
+          <p className="text-xs text-slate-400 mb-3 flex items-center gap-1">
+            📍 {comercio.direccion || "Dirección no especificada"}
           </p>
-          <div className="bg-slate-900/60 p-3 rounded-xl mb-4 border border-slate-700/50">
-            <p className="text-xs text-slate-400">
-              <strong className="text-slate-200">Necesidad:</strong>{" "}
-              {comercio.necesidad}
-            </p>
-          </div>
+
+          {comercio.necesidad && (
+            <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 mb-4">
+              <p className="text-xs text-slate-400">
+                <span className="font-semibold text-slate-300">
+                  Necesidad:
+                </span>{" "}
+                {comercio.necesidad}
+              </p>
+            </div>
+          )}
         </div>
 
-        <div className="pt-3 border-t border-slate-700/50 flex items-center justify-between">
-          <span className="text-xs text-emerald-300 font-medium bg-emerald-950/40 px-2 py-1 rounded">
-            🏷️ {comercio.descuentoReactivacion}
+        {/* Footer con oferta y botón dinámico de WhatsApp */}
+        <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2 mt-auto">
+          <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-2.5 py-1.5 rounded-lg line-clamp-1">
+            🏷️ {comercio.descuento_reactivacion || "Consultar oferta"}
           </span>
-          <a
-            href={`https://wa.me/57${comercio.contacto}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
-          >
-            WhatsApp
-          </a>
+
+          {comercio.contacto ? (
+            <a
+              href={urlWhatsApp}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-md active:scale-95 shrink-0"
+            >
+              <span>💬</span> WhatsApp
+            </a>
+          ) : (
+            <span className="text-xs text-slate-500 italic">Sin contacto</span>
+          )}
         </div>
       </div>
     </div>
   );
 }
-
-ComercioCard.propTypes = {
-  comercio: PropTypes.shape({
-    id: PropTypes.number,
-    nombre: PropTypes.string,
-    categoria: PropTypes.string,
-    comuna: PropTypes.string,
-    direccion: PropTypes.string,
-    propietario: PropTypes.string,
-    contacto: PropTypes.string,
-    estado: PropTypes.string,
-    necesidad: PropTypes.string,
-    descuentoReactivacion: PropTypes.string,
-    imagen: PropTypes.string,
-  }).isRequired,
-};
