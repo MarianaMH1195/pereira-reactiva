@@ -1,18 +1,51 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { comerciosMock } from "./data/mockData";
 import ComercioCard from "./components/ComercioCard";
 import Filtros from "./components/Filtros";
 import DashboardStats from "./components/DashboardStats";
-import NuevoComercioModal from "./components/NuevoComercioModal";
+import NuevoComercioModal from MapaComercios.jsx
+import { supabase } from "./lib/supabaseClient";
+import MapaComercios from "./components/MapaComercios";
+
+// 🎨 Importamos el CSS separado
+import "./styles/App.css";
 
 export default function App() {
-  const [comercios, setComercios] = useState(comerciosMock);
+  const [comercios, setComercios] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [busqueda, setBusqueda] = useState("");
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("Todas");
   const [comunaSeleccionada, setComunaSeleccionada] = useState("Todas");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    fetchComercios();
+  }, []);
+
+  const fetchComercios = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("comercios")
+        .select("*")
+        .order("id", { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setComercios(data);
+      } else {
+        setComercios(comerciosMock);
+      }
+    } catch (err) {
+      console.error("Error al cargar de Supabase:", err.message);
+      setComercios(comerciosMock);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const categorias = useMemo(
     () => [...new Set(comercios.map((item) => item.categoria))],
@@ -23,15 +56,42 @@ export default function App() {
     [comercios]
   );
 
-  const handleAgregarComercio = (nuevoComercio) => {
-    setComercios((prev) => [nuevoComercio, ...prev]);
+  const handleAgregarComercio = async (nuevoComercio) => {
+    try {
+      const { data, error } = await supabase
+        .from("comercios")
+        .insert([
+          {
+            nombre: nuevoComercio.nombre,
+            categoria: nuevoComercio.categoria,
+            comuna: nuevoComercio.comuna,
+            direccion: nuevoComercio.direccion,
+            propietario: nuevoComercio.propietario,
+            contacto: nuevoComercio.contacto,
+            estado: nuevoComercio.estado,
+            necesidad: nuevoComercio.necesidad,
+            descuento_reactivacion: nuevoComercio.descuentoReactivacion,
+            imagen: nuevoComercio.imagen,
+          },
+        ])
+        .select();
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setComercios((prev) => [data[0], ...prev]);
+      }
+    } catch (err) {
+      console.error("Error al insertar en Supabase:", err.message);
+      setComercios((prev) => [nuevoComercio, ...prev]);
+    }
   };
 
   const comerciosFiltrados = useMemo(() => {
     return comercios.filter((comercio) => {
       const coincideBusqueda =
-        comercio.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-        comercio.necesidad.toLowerCase().includes(busqueda.toLowerCase());
+        comercio.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
+        comercio.necesidad?.toLowerCase().includes(busqueda.toLowerCase());
 
       const coincideCategoria =
         categoriaSeleccionada === "Todas" ||
@@ -46,20 +106,18 @@ export default function App() {
   }, [comercios, busqueda, categoriaSeleccionada, comunaSeleccionada]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-6 md:p-10">
-      <header className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="app-container">
+      <header className="app-header">
         <div>
-          <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200">
-            Pereira Reactiva 🚀
-          </h1>
-          <p className="text-slate-400 mt-2 text-lg">
-            Directorio e Indicadores de Reactivación Comercial de Nuestra Ciudad
+          <h1 className="app-title">Pereira Reactiva 🚀</h1>
+          <p className="app-subtitle">
+            Directorio e Indicadores de Reactivación Comercial
           </p>
         </div>
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 self-start md:self-auto"
+          className="btn-registrar"
         >
           <span>➕</span> Registrar Comercio
         </button>
@@ -79,8 +137,14 @@ export default function App() {
           comunas={comunas}
         />
 
-        {comerciosFiltrados.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {loading ? (
+          <div className="text-center py-16">
+            <p className="text-emerald-400 text-lg font-medium animate-pulse">
+              Cargando comercios... 🔄
+            </p>
+          </div>
+        ) : comerciosFiltrados.length > 0 ? (
+          <div className="grid-comercios">
             {comerciosFiltrados.map((comercio) => (
               <ComercioCard key={comercio.id} comercio={comercio} />
             ))}
@@ -88,7 +152,7 @@ export default function App() {
         ) : (
           <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl">
             <p className="text-slate-400 text-lg">
-              No se encontraron comercios que coincidan con los filtros seleccionados.
+              No se encontraron comercios con los filtros seleccionados.
             </p>
           </div>
         )}
@@ -98,8 +162,14 @@ export default function App() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAgregarComercio={handleAgregarComercio}
-        categorias={categorias}
-        comunas={comunas}
+        categorias={
+          categorias.length > 0
+            ? categorias
+            : ["Gastronomía", "Comercio", "Servicios"]
+        }
+        comunas={
+          comunas.length > 0 ? comunas : ["Centro", "Circunvalar", "Cuba"]
+        }
       />
     </div>
   );
