@@ -3,11 +3,11 @@ import { comerciosMock } from "./data/mockData";
 import ComercioCard from "./components/ComercioCard";
 import Filtros from "./components/Filtros";
 import DashboardStats from "./components/DashboardStats";
-import NuevoComercioModal from MapaComercios.jsx
-import { supabase } from "./lib/supabaseClient";
+import NuevoComercioModal from "./components/NuevoComercioModal";
 import MapaComercios from "./components/MapaComercios";
+import { supabase } from "./lib/supabaseClient";
 
-// 🎨 Importamos el CSS separado
+// 🎨 Estilos separados
 import "./styles/App.css";
 
 export default function App() {
@@ -137,6 +137,15 @@ export default function App() {
           comunas={comunas}
         />
 
+        {/* 🗺️ Mapa Interactivo */}
+        <section className="my-8">
+          <h2 className="text-xl font-bold mb-4 text-emerald-400">
+            📍 Mapa de Comercios Registrados
+          </h2>
+          <MapaComercios comercios={comerciosFiltrados} />
+        </section>
+
+        {/* 📦 Lista de Tarjetas */}
         {loading ? (
           <div className="text-center py-16">
             <p className="text-emerald-400 text-lg font-medium animate-pulse">
