@@ -1,4 +1,4 @@
-/* src/styles/App.css */
+@reference "../index.css";
 
 .app-container {
   @apply min-h-screen w-full bg-slate-950 text-white p-6 md:p-10;
