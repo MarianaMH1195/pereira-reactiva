@@ -24,6 +24,9 @@ export default function App() {
   const [cargandoUbicacion, setCargandoUbicacion] = useState(false);
   const [ordenarPorCercania, setOrdenarPorCercania] = useState(false);
 
+  // 🎯 Estado para el comercio seleccionado en el mapa
+  const [comercioSeleccionado, setComercioSeleccionado] = useState(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -214,7 +217,10 @@ export default function App() {
           <h2 className="text-xl font-bold mb-4 text-emerald-400">
             📍 Mapa de Comercios Registrados
           </h2>
-          <MapaComercios comercios={comerciosFiltrados} />
+          <MapaComercios
+            comercios={comerciosFiltrados}
+            onSelectComercio={setComercioSeleccionado}
+          />
         </section>
 
         {/* 📦 Lista de Tarjetas */}
@@ -231,6 +237,8 @@ export default function App() {
                 key={comercio.id}
                 comercio={comercio}
                 ubicacionUsuario={ubicacionUsuario}
+                esSeleccionado={comercioSeleccionado === comercio.id}
+                onSelect={() => setComercioSeleccionado(comercio.id)}
               />
             ))}
           </div>
